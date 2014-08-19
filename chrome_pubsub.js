@@ -17,22 +17,25 @@ var pubsub = (function() {
   }
 
   function privateRegisterListener() {
-    chrome.runtime.onMessage.addListener(function(message) {
+    chrome.runtime.onMessage.addListener(function(message, sender) {
       console.log("receiving", message);
+      // If the message is from a content script and this instance of pubsub is
+      // the background script, rebroadcast the message.
+      // TODO: this currently assumes the active tab is the only one we're
+      // interested in. It would be nice to have a mechanism to broadcast to
+      // all tabs, with each tab filtering out messages not meant for it.
+      if (chrome.tabs && message.from === 'content_script') {
+        // attach the tab id in case the subscriber needs it
+        message.content.tabId = sender.tab.id;
+        chrome.tabs.sendMessage(sender.tab.id, message);
+      }
+
       if (callbacks[message.filter]) {
         for (var i=0; i<callbacks[message.filter].length; i+=1) {
           callbacks[message.filter][i](message.content);
         }
       }
 
-      // If the message is from a content script and this instance of pubsub is
-      // the background script, rebroadcast the message out to all content
-      // scripts
-      if (message.from === 'content_script') {
-        privateGetActiveTab(function(tab) {
-          chrome.tabs.sendMessage(tab.id, message);
-        });
-      }
     });
   }
 
