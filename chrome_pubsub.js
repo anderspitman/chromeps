@@ -18,7 +18,7 @@ var pubsub = (function() {
 
   function privateRegisterListener() {
     chrome.runtime.onMessage.addListener(function(message, sender) {
-      console.log("receiving", message);
+      //console.log("receiving", message);
       // If the message is from a content script and this instance of pubsub is
       // the background script, rebroadcast the message.
       // TODO: this currently assumes the active tab is the only one we're
@@ -27,6 +27,7 @@ var pubsub = (function() {
       if (chrome.tabs && message.from === 'content_script') {
         // attach the tab id in case the subscriber needs it
         message.content.tabId = sender.tab.id;
+        //console.log("sending1", message);
         chrome.tabs.sendMessage(sender.tab.id, message);
       }
 
@@ -52,7 +53,7 @@ var pubsub = (function() {
       chromeMsg.from = 'content_script';
     }
 
-    console.log("sending", chromeMsg);
+    //console.log("sending2", chromeMsg);
     chrome.runtime.sendMessage(chromeMsg);
   }
 
@@ -64,7 +65,7 @@ var pubsub = (function() {
         'from': 'background_page'
       };
       privateGetActiveTab(function(tab) {
-        console.log("sending", chromeMsg);
+        //console.log("sending3", chromeMsg);
         chrome.tabs.sendMessage(tab.id, chromeMsg);
       });
     }
@@ -76,7 +77,6 @@ var pubsub = (function() {
   }
 
   function publicSubscribe(filter, callback) {
-    console.log(callbacks[filter]);
     if (callbacks[filter] === undefined) {
       callbacks[filter] = [];
     }
