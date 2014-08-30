@@ -1,5 +1,5 @@
 
-var pubsub = (function() {
+var chromeps = (function() {
   
   var callbacks = {};
 
