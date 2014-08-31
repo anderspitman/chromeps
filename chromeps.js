@@ -1,19 +1,7 @@
+
 var chromeps = (function() {
   
   var callbacks = {};
-
-  function privateGetActiveTab(callback) {
-    if (chrome.tabs) {
-      var tabQuery = {
-        active: true,
-        currentWindow: true
-      };
-
-      chrome.tabs.query(tabQuery, function(tabs) {
-        callback(tabs[0]);
-      });
-    }
-  }
 
   function privateSendToTabs(message) {
     chrome.tabs.query({}, function(tabs) {
@@ -21,29 +9,10 @@ var chromeps = (function() {
         chrome.tabs.sendMessage(tabs[i].id, message);
       }
     });
-    //// Send message to all tabs
-    //if (message.to === 'all') {
-    //  chrome.tabs.query({}, function(tabs) {
-    //    for (var i=0; i<tabs.length; i++) {
-    //      chrome.tabs.sendMessage(tabs[i].id, message);
-    //    }
-    //  });
-    //}
-    //// Only send to active tab
-    //else if (message.to === 'active') {
-    //  privateGetActiveTab(function(tab) {
-    //    chrome.tabs.sendMessage(tab.id, message);
-    //  });
-    //}
-    //// Send to same tab that original message came from
-    //else if (message.to === 'same') {
-    //  chrome.tabs.sendMessage(message.content.tabId, message);
-    //}
   }
 
   function privateRegisterListener() {
     chrome.runtime.onMessage.addListener(function(message, sender) {
-      console.log("receiving", message);
       // If the message is from a content script and this instance of pubsub is
       // the background script, rebroadcast the message.
       if (chrome.tabs && message.from === 'content_script') {
@@ -61,11 +30,10 @@ var chromeps = (function() {
     });
   }
 
-  function privateSendMessage(filter, message, to) {
+  function publicPublish(filter, message) {
     chromeMsg = {
       'filter': filter,
-      'content': message,
-      'to': to
+      'content': message
     };
 
     // If sending from the background page, send directly to the tabs. If
@@ -82,18 +50,6 @@ var chromeps = (function() {
     chrome.runtime.sendMessage(chromeMsg);
   }
 
-  function publicPublish(filter, message) {
-    privateSendMessage(filter, message, 'all');
-  }
-
-  //function publicPublishActive(filter, message) {
-  //  privateSendMessage(filter, message, 'active');
-  //}
-
-  //function publicPublishSame(filter, message) {
-  //  privateSendMessage(filter, message, 'same');
-  //}
-
   function publicSubscribe(filter, callback) {
     if (callbacks[filter] === undefined) {
       callbacks[filter] = [];
@@ -105,9 +61,8 @@ var chromeps = (function() {
 
   return {
     publish: publicPublish,
-    //publishActive: publicPublishActive,
-    //publishSame: publicPublishSame,
     subscribe: publicSubscribe
   }
 
 }());
+
