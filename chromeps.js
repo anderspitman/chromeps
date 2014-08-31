@@ -1,5 +1,6 @@
 var chromeps = (function() {
   
+  var privateTabId = null;
   var callbacks = {};
 
   function privateGetActiveTab(callback) {
@@ -36,9 +37,33 @@ var chromeps = (function() {
     }
   }
 
+  // Handy little function to retrieve the ID of the calling tab. Currently
+  // the only way to get the tab id is by asking the background page. In this
+  // implementation the tab will request the tab id from the background page
+  // only the first time. Subsequent calls return the original value.
+  function publicGetTabId(callback) {
+    if (!chrome.tabs) {
+      if (privateTabId) {
+        callback(privateTabId);
+      }
+      else {
+        chrome.runtime.sendMessage('get_tab_id', function(tabId) {
+          privateTabId = tabId;
+          callback(privateTabId);
+        });
+      }
+    }
+  }
+
   function privateRegisterListener() {
-    chrome.runtime.onMessage.addListener(function(message, sender) {
-      console.log("receiving", message);
+    chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
+      //console.log("receiving", message);
+      // Special case where tab is requesting it's tab ID. Simply return it
+      if (message === 'get_tab_id') {
+        sendResponse(sender.tab.id);
+        return;
+      }
+
       // If the message is from a content script and this instance of pubsub is
       // the background script, rebroadcast the message.
       if (chrome.tabs && message.from === 'content_script') {
@@ -102,7 +127,8 @@ var chromeps = (function() {
     publish: publicPublish,
     publishActive: publicPublishActive,
     publishSame: publicPublishSame,
-    subscribe: publicSubscribe
+    subscribe: publicSubscribe,
+    getTabId: publicGetTabId
   }
 
 }());
